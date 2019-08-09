@@ -1,9 +1,12 @@
+import math
+
 from autoslug import AutoSlugField
 from ckeditor.fields import RichTextField
 from django.contrib.auth.models import User
 from django.db import models
 
 # Create your models here.
+from django.db.models import Avg
 from sorl.thumbnail import ImageField
 
 
@@ -46,6 +49,17 @@ class Product(models.Model):
     def __str__(self):
         return self.title
 
+    def rating(self):
+        op = self.producthasimage_set.aggregate(Avg('rating'))
+        r = 0
+        if 'rating__avg' in op and op['rating_avg']:
+            r = op['rating_avg']
+
+        return int(math.ceil(r))
+
+    def rating_range(self):
+        return range(self.rating())
+
 
 class ProductHasImage(models.Model):
     image = ImageField()
@@ -59,3 +73,9 @@ class ProductHasReview(models.Model):
     rating = models.IntegerField()
     comment = models.TextField()
     pubdate = models.DateTimeField(auto_now_add=True)
+
+    def rating_range(self):
+        if not self.rating:
+            return []
+
+        return range(self.rating)
